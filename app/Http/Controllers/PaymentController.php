@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\Payment\PaymentService;
 use App\Http\Requests\Payment\PaymentRequest;
-use App\Services\Payment\PaymentFactory\AppleFactory;
-use App\Services\Payment\PaymentFactory\PayJPFactory;
 
 class PaymentController extends Controller
 {
@@ -19,17 +17,10 @@ class PaymentController extends Controller
 
     public function payment(PaymentRequest $request)
     {
-        switch ($request->get('payment_method')) {
-            case 'PayJP':
-                $payer = new PayJPFactory('access token PayJP');
-                break;
+        $payer = $this->paymentService->selectPaymentMethod($request->get('payment_method'));
 
-            case 'Apple':
-                $payer = new AppleFactory('access token Apple');
-                break;
-
-            default:
-                return response()->json(['message' => 'Payment method not found !!!'], 403);
+        if (!$payer) {
+            return response()->json(['message' => 'Payment method not found !!!'], 403);
         }
 
         if($this->paymentService->payment($payer, $request->validated())) {
@@ -41,21 +32,14 @@ class PaymentController extends Controller
 
     public function getInfo($paymentMethod)
     {
-        switch ($paymentMethod) {
-            case 'PayJP':
-                $payer = new PayJPFactory('access token PayJP');
-                break;
+        $payer = $this->paymentService->selectPaymentMethod($paymentMethod);
 
-            case 'Apple':
-                $payer = new AppleFactory('access token Apple');
-                break;
-
-            default:
-                return response()->json(['message' => 'Payment method not found !!!'], 403);
+        if (!$payer) {
+            return response()->json(['message' => 'Payment method not found !!!'], 403);
         }
 
         $info = $payer->getInfo();
-        
+
         if($info) {
             return response()->json(['data' => $info], 200);
         }
